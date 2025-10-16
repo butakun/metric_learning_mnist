@@ -50,6 +50,8 @@ def train(max_epoch, lr, batch_size, margin, scale):
         t0 = time.perf_counter()
         running_loss_train = 0.0
         n_train = 0
+        model.train()
+        metric.train()
         for x, label in train_data_loader:
             x = x.to(device)
             label = label.to(device)
@@ -65,20 +67,32 @@ def train(max_epoch, lr, batch_size, margin, scale):
             running_loss_train += loss.item() * n_batch
             n_train += n_batch
 
-            if False:
-                x_mean = x.view(x.size(0), -1).mean(1)
-                print("*" * 80)
-                print(f"{x_mean=}")
-                print(f"{label=}")
-                print(f"{y=}")
-                print(f"{logits=}")
-                print(f"{loss=}")
-                print(f"{n_batch=}, {n_train=}")
         t1 = time.perf_counter()
-        dt_epoch = t1 - t0
-
+        dt_train_epoch = t1 - t0
         running_loss_train /= n_train
-        print(f"{epoch=}, {running_loss_train=}, {n_train=}, {dt_epoch=:5.2f}sec")
+
+        with torch.no_grad():
+            running_loss_val = 0.0
+            n_val = 0
+            model.eval()
+            metric.eval()
+            for x, label in val_data_loader:
+                x = x.to(device)
+                label = label.to(device)
+
+                y = model(x)
+                logits = metric(y, label)
+                loss = loss_function(logits, label)
+
+                n_batch = label.size(0)
+                running_loss_val += loss.item() * n_batch
+                n_val += n_batch
+
+        t2 = time.perf_counter()
+        dt_val_epoch = t2 - t1
+        running_loss_val /= n_val
+
+        print(f"{epoch=}, train_loss={running_loss_train}, val_loss={running_loss_val}, {n_train=}, train:{dt_train_epoch:5.2f}sec, val:{dt_val_epoch:5.2f}sec")
 
         if epoch % 100 == 0:
             save_checkpoint(f"checkpoint.{epoch}.pth")

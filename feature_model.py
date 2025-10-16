@@ -12,26 +12,26 @@ class FeatureModel(nn.Module):
             nn.Flatten(),
             nn.Linear(img_size * img_size, hidden_size),
             nn.LeakyReLU(),
-            nn.Dropout(),
             nn.Linear(hidden_size, hidden_size),
             nn.LeakyReLU(),
-            nn.Dropout(),
+            nn.Dropout(0.1),
             nn.Linear(hidden_size, out_size)
             )
         """
-        """
+
         self.model = nn.Sequential(
             nn.Conv2d(1, 10, 3, 1),
             nn.LeakyReLU(),
             nn.Conv2d(10, 20, 3, 1),
             nn.LeakyReLU(),
             nn.MaxPool2d(2),
-            nn.Dropout2d(),
+            nn.Dropout2d(0.1),
             nn.Flatten(),
-            nn.Linear(2880, 128),
-            nn.Linear(128, out_size)
+            nn.Linear(2880, out_size),
             )
+
         """
+        # https://medium.com/@cr.tagadiya/arcface-loss-mnist-case-study-9ba89427d924
         self.model = nn.Sequential(
             nn.Conv2d(1, 64, 3, 1, 1),
             nn.ReLU(),
@@ -40,6 +40,7 @@ class FeatureModel(nn.Module):
             nn.Flatten(),
             nn.Linear(28 * 28 * 128, out_size)
             )
+        """
 
     def forward(self, x):
         return F.normalize(self.model(x))
