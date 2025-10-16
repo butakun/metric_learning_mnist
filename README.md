@@ -7,3 +7,8 @@ uv run ./main.py --max-epoch 200 --lr 0.001 --margin 0.5 --scale 30.0 --batch-si
 ```
 uv run ./main.py --max-epoch 200 --lr 0.001 --margin 0.5 --scale 30.0 --batch-size 128
 ```
+
+- Model 3, MLP
+```
+uv run ./main.py --max-epoch 200 --lr 0.001 --margin 0.5 --scale 30.0 --batch-size 128
+```
