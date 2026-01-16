@@ -4,8 +4,8 @@ from torch import nn
 from torchvision.datasets import MNIST
 from torchvision.transforms import v2
 from torch.utils.data import DataLoader
-from feature_model import FeatureModel
-from metrics import ArcFaceMetric
+from feature_model import create_model
+from metrics import ArcFaceMetric, SoftmaxMetric
 
 if torch.cuda.is_available():
     device = "cuda"
@@ -18,16 +18,36 @@ print(f"{device=}")
 train_transform = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
 val_transform = v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)])
 
+MODEL_TYPES = {
+        "FeatureModelMLP": {
+            "name": "FeatureModelMLP",
+            "parameters": {
+                "out_size": 2
+                }
+            },
+        "FeatureModel2": {
+            "name": "FeatureModel2", "parameters": {"out_size": 3},
+            },
+        "FeatureModel1": {
+            "name": "FeatureModel1", "parameters": {"out_size": 3},
+            },
+        }
 
-def train(max_epoch, lr, batch_size, margin, scale):
+
+def train(model_name, metric_name, latent_dim, max_epoch, lr, batch_size, margin, scale):
     train_dataset = MNIST(root="./data", download=True, train=True, transform=train_transform)
     val_dataset = MNIST(root="./data", download=True, train=False, transform=val_transform)
 
     train_data_loader = DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
     val_data_loader = DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=False)
 
-    model = FeatureModel(out_size=3).to(device)
-    metric = ArcFaceMetric(n_classes=10, latent_dim=3, margin=margin, scale=scale).to(device)
+    model_config = MODEL_TYPES[model_name]
+    model_config["parameters"]["out_size"] = latent_dim
+    model = create_model(model_config).to(device)
+    if metric_name == "ArcFace":
+        metric = ArcFaceMetric(n_classes=10, latent_dim=latent_dim, margin=margin, scale=scale).to(device)
+    elif metric_name == "Softmax":
+        metric = SoftmaxMetric(n_classes=10, latent_dim=latent_dim, scale=scale).to(device)
 
     loss_function = nn.CrossEntropyLoss()
 
@@ -38,6 +58,7 @@ def train(max_epoch, lr, batch_size, margin, scale):
 
     def save_checkpoint(filename):
         state_dict = {
+                "model_config": model_config,
                 "model": model.state_dict(),
                 "metric": metric.state_dict(),
                 "optimizer": optimizer.state_dict(),
@@ -101,12 +122,19 @@ def train(max_epoch, lr, batch_size, margin, scale):
 
 
 def main(args):
-    train(args.max_epoch, lr=args.lr, batch_size=args.batch_size, margin=args.margin, scale=args.scale)
+    train(
+        args.model_name, args.metric_name, args.latent_dim,
+        args.max_epoch,
+        lr=args.lr, batch_size=args.batch_size, margin=args.margin, scale=args.scale
+        )
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model-name", default="FeatureModel2")
+    parser.add_argument("--metric-name", default="ArcFace", help="ArcFace|Softmax")
+    parser.add_argument("--latent-dim", type=int, default=3)
     parser.add_argument("--max-epoch", type=int, required=True)
     parser.add_argument("--lr", type=float, required=True)
     parser.add_argument("--margin", type=float, required=True)

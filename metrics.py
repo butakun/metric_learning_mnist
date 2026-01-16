@@ -26,3 +26,20 @@ class ArcFaceMetric(nn.Module):
         cos_theta = torch.cos(theta)
         logits = self.scale * cos_theta
         return logits
+
+
+class SoftmaxMetric(nn.Module):
+
+    def __init__(self, n_classes, latent_dim, scale):
+        super().__init__()
+
+        self.n_classes = n_classes
+        self.scale = scale
+        self.W = nn.Parameter(torch.empty((n_classes, latent_dim)), requires_grad=True)
+        nn.init.xavier_uniform_(self.W)
+
+    def forward(self, x, label):
+        # we assume a normalized x.
+        cos_theta = F.linear(x, F.normalize(self.W, dim=1)).clamp(-0.999999, 0.999999)
+        logits = self.scale * cos_theta
+        return logits

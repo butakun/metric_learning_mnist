@@ -5,7 +5,7 @@ from torchvision.transforms import v2
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import numpy as np
-from feature_model import FeatureModel
+from feature_model import create_model
 from metrics import ArcFaceMetric
 
 def main(ckp_filename):
@@ -13,7 +13,7 @@ def main(ckp_filename):
     margin = ckp["margin"]
     scale = ckp["scale"]
 
-    model = FeatureModel(out_size=3)
+    model = create_model(ckp["model_config"])
     model.load_state_dict(ckp["model"])
     model.eval()
 
